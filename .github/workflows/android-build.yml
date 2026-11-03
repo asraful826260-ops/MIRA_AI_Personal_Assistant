@@ -1,103 +1,65 @@
-Native Android personal AI assistant app for Redmi Note 12R (Android 13). PROJECT NAME: MIRA AI – Personal Smart Assistant
 
-PROJECT TYPE: Native Android AI Voice Assistant.
+name: MIRA Android APK Build
 
-TARGET DEVICE: Redmi Note 12R Android 13 MIUI Global 14.0.2
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
-MAIN GOAL: Build a fully functional personal AI assistant that can control supported phone features using voice commands.
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-The assistant's name is MIRA AI.
-Wake word: "Hey MIRA".
-Support Bengali and English languages.
-Use a natural female AI voice.
-Understand voice commands.
-Respond with spoken answers.
-Provide an AI chat system.
-SCREEN-OFF VOICE ACTIVATION
-Support hands-free voice activation.
-Allow the user to say "Hey MIRA" when the screen is off.
-Implement a suitable Android foreground service.
-Show a persistent notification while listening.
-Provide microphone permission controls.
-Include battery optimization guidance.
-Respect Android background execution restrictions.
-Never secretly record audio.
-PHONE CONTROL Allow MIRA AI to perform supported actions:
-Open installed applications.
-Turn the flashlight on and off.
-Control supported volume settings.
-Open Wi-Fi settings.
-Open Bluetooth settings.
-Show battery information.
-Open phone settings.
-Open the dialer.
-Set alarms and timers.
-Open messaging applications.
-Control supported music playback.
-Ask for confirmation before sensitive actions.
+      - name: Extract MIRA ZIP
+        run: |
+          mkdir -p mira-src
+          unzip -q MIRA_AI_Personal_Assistant.zip -d mira-src
 
-PREMIUM USER INTERFACE Create a beautiful futuristic interface.
-Design requirements:
+      - name: Find Gradle Wrapper
+        run: |
+          GRADLEW=$(find mira-src -type f -name gradlew -print -quit)
 
-Purple and pink neon theme.
-AI animated avatar.
-Premium glassmorphism interface.
-Large microphone button.
-Chat button.
-Apps button.
-Volume button.
-Settings button.
-AI Active indicator.
-Listening animation.
-Dark mode.
-AI CHAT SYSTEM
-Answer general questions.
-Understand Bengali and English.
-Maintain conversational context.
-Provide voice responses.
-Show chat history.
-SECURITY AND PRIVACY
-Request permissions transparently.
-Never bypass the phone lock screen.
-Never access private information without permission.
-Never send messages or make calls without user confirmation.
-Provide an option to disable microphone listening.
-Store sensitive information securely.
-TECHNICAL REQUIREMENTS
-Use Kotlin and Android Studio.
-Build a native Android application.
-Target Android 13 compatibility.
-Use modern Android development practices.
-Handle microphone permissions correctly.
-Handle background service restrictions.
-Include proper error handling.
-Optimize battery usage.
-REQUIRED DELIVERABLES
-Generate:
+          if [ -z "$GRADLEW" ]; then
+            echo "Gradle wrapper not found!"
+            exit 1
+          fi
 
-Complete Android Studio project.
+          echo "GRADLEW_DIR=$(dirname "$GRADLEW")" >> "$GITHUB_ENV"
 
-Complete source code.
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-Android APK.
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-Downloadable ZIP file.
+      - name: Build MIRA APK
+        run: |
+          cd "$GRADLEW_DIR"
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
-Setup instructions.
+      - name: Prepare APK
+        run: |
+          APK=$(find mira-src -type f -path "*/build/outputs/apk/debug/*.apk" -print -quit)
 
-Installation instructions.
+          if [ -z "$APK" ]; then
+            echo "APK file not found!"
+            exit 1
+          fi
 
-Permission configuration.
+          cp "$APK" MIRA_AI.apk
 
-FINAL REQUIREMENT
+      - name: Upload MIRA APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MIRA-AI-APK
+          path: MIRA_AI.apk
 
-The application must be functional, not just a visual demo.
-
-Test the application on Android 13 where possible.
-
-Do not claim that unsupported phone controls work.
-
-PROJECT OUTPUT: MIRA_AI_Personal_Assistant.zip MIRA_AI.apk
-
-Build the complete MIRA AI Personal Smart Assistant.
