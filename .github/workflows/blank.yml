@@ -1,0 +1,52 @@
+name: MIRA Android APK Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract MIRA project
+        run: |
+          mkdir -p mira-src
+          unzip -q MIRA_AI_Personal_Assistant.zip -d mira-src
+
+      - name: Find Gradle project
+        run: |
+          GRADLEW=$(find mira-src -type f -name gradlew -print -quit)
+          if [ -z "$GRADLEW" ]; then
+            echo "ERROR: Gradle wrapper not found in ZIP"
+            exit 1
+          fi
+          echo "GRADLEW_DIR=$(dirname "$GRADLEW")" >> "$GITHUB_ENV"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-33 build-tools;33.0.2'
+          accept-android-sdk-licenses: true
+
+      - name: Build APK
+        working-directory: ${{ env.GRADLEW_DIR }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MIRA-AI-APK
+          path: mira-src/**/build/outputs/apk/debug/*.apk
