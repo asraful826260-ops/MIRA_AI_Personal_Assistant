@@ -30,7 +30,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-        accept-sdk-licenses: true
+accept-sdk-licenses: true
 
       - name: Build MIRA APK
         run: |
