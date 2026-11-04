@@ -30,24 +30,23 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-accept-sdk-licenses: true
+          accept-sdk-licenses: true
 
-    - name: Build MIRA APK
+      - name: Build MIRA APK
         run: |
-         
           cd mira-src/MIRA_AI_Personal_Assistant
           chmod +x gradlew
           ./gradlew assembleDebug
 
       - name: Prepare APK
         run: |
-          APK=$(find mira-src -type f -path "*/build/outputs/apk/debug/*.apk" -print -quit)
-
+          APK=$(find mira-src -type f -path "**/build/outputs/apk/debug/*.apk" -print -quit)
+          
           if [ -z "$APK" ]; then
             echo "APK file not found!"
             exit 1
           fi
-
+          
           cp "$APK" MIRA_AI.apk
 
       - name: Upload MIRA APK
