@@ -1,4 +1,4 @@
-name: MIRAname: MIRA Android APK Build
+name: MIRA Android APK Build
 
 on:
   workflow_dispatch:
