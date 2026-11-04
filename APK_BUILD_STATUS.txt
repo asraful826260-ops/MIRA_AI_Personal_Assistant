@@ -1,0 +1,4 @@
+MIRA AI starter project
+APK is not included in this ZIP.
+Build using GitHub Actions workflow: .github/workflows/android-build.yml
+AI backend is not configured yet.
