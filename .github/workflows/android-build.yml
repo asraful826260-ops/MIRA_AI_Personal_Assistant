@@ -1,4 +1,4 @@
-name: MIRA Android APK Build
+name: MIRAname: MIRA Android APK Build
 
 on:
   workflow_dispatch:
@@ -18,22 +18,8 @@ jobs:
         run: |
           mkdir -p mira-src
           unzip -q MIRA_AI_Personal_Assistant.zip -d mira-src
-          echo "--- Contents of mira-src ---"
-          ls -R mira-src
-
-      - name: Find Gradle Wrapper
-        run: |
-          # Search for gradlew inside mira-src
-          GRADLEW=$(find mira-src -maxdepth 3 -name "gradlew" -print -quit)
-
-          if [ -z "$GRADLEW" ]; then
-            echo "ERROR: Gradle wrapper not found!"
-            exit 1
-          fi
-
-          GRADLEW_DIR=$(dirname "$GRADLEW")
-          echo "Found gradlew at: $GRADLEW"
-          echo "GRADLEW_DIR=$GRADLEW_DIR" >> "$GITHUB_ENV"
+          echo "--- Extracted Folder Structure ---"
+          ls -la mira-src/MIRA_AI_Personal_Assistant
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -46,7 +32,8 @@ jobs:
 
       - name: Build MIRA APK
         run: |
-          cd "$GRADLEW_DIR"
+          # জিপের ভেতরের মূল সাব-ফোল্ডারে প্রবেশ করে গ্র্যাডেল রান করা হচ্ছে
+          cd mira-src/MIRA_AI_Personal_Assistant
           chmod +x gradlew
           ./gradlew assembleDebug
 
