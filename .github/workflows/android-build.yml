@@ -32,7 +32,7 @@ jobs:
 
       - name: Build MIRA APK
         run: |
-          # জিপের ভেতরের মূল সাব-ফোল্ডারে প্রবেশ করে গ্র্যাডেল রান করা হচ্ছে
+         
           cd mira-src/MIRA_AI_Personal_Assistant
           chmod +x gradlew
           ./gradlew assembleDebug
