@@ -32,7 +32,7 @@ jobs:
         with:
 accept-sdk-licenses: true
 
-      - name: Build MIRA APK
+      -name: Build MIRA APK
         run: |
          
           cd mira-src/MIRA_AI_Personal_Assistant
