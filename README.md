@@ -115,3 +115,4 @@ MIRA_AI_Personal_Assistant.zip
 MIRA_AI.apk
 
 Build the complete MIRA AI Personal Smart Assistant.
+ Mira ke Je Tui record se tanmam asraful 
