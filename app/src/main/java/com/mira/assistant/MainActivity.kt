@@ -55,6 +55,24 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             if (granted) startSpeechRecognition()
         }
 
+    private var pendingVoiceStart: ((Boolean) -> Unit)? = null
+
+    private val voicePermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            val callback = pendingVoiceStart
+            pendingVoiceStart = null
+            if (granted) {
+                try {
+                    startVoiceServiceNow()
+                    callback?.invoke(true)
+                } catch (_: Exception) {
+                    callback?.invoke(false)
+                }
+            } else {
+                callback?.invoke(false)
+            }
+        }
+
     private val speechLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val spoken = result.data
@@ -96,7 +114,9 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                 saveModel = {
                     prefs.edit().putString("gemini_model", it).apply()
                 },
-                onFetchModels = { done -> fetchModels(done) }
+                onFetchModels = { done -> fetchModels(done) },
+                onStartVoice = { callback -> startVoiceService(callback) },
+                onStopVoice = { stopVoiceService() }
             )
         }
     }
@@ -104,6 +124,32 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     override fun onInit(status: Int) {
         ttsReady = status == TextToSpeech.SUCCESS
         if (ttsReady) tts?.language = Locale("bn", "BD")
+    }
+
+    private fun startVoiceService(callback: (Boolean) -> Unit) {
+        if (ContextCompat.checkSelfPermission(
+                this, Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            try {
+                startVoiceServiceNow()
+                callback(true)
+            } catch (_: Exception) {
+                callback(false)
+            }
+        } else {
+            pendingVoiceStart = callback
+            voicePermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    private fun startVoiceServiceNow() {
+        val intent = Intent(this, MiraVoiceService::class.java)
+        ContextCompat.startForegroundService(this, intent)
+    }
+
+    private fun stopVoiceService() {
+        stopService(Intent(this, MiraVoiceService::class.java))
     }
 
     private fun speak(text: String) {
@@ -443,7 +489,9 @@ fun MiraScreen(
     saveApiKey: (String) -> Unit,
     savedModel: () -> String,
     saveModel: (String) -> Unit,
-    onFetchModels: ((List<String>, String?) -> Unit) -> Unit
+    onFetchModels: ((List<String>, String?) -> Unit) -> Unit,
+    onStartVoice: (((Boolean) -> Unit) -> Unit),
+    onStopVoice: () -> Unit
 ) {
     var input by remember { mutableStateOf("") }
     var history by remember {
@@ -459,6 +507,8 @@ fun MiraScreen(
     var models by remember { mutableStateOf(emptyList<String>()) }
     var loadingModels by remember { mutableStateOf(false) }
     var modelMessage by remember { mutableStateOf("") }
+    var voiceEnabled by remember { mutableStateOf(false) }
+    var voiceMessage by remember { mutableStateOf("") }
 
     val pink = Color(0xFFFF4FA3)
     val dark = Color(0xFF17101D)
@@ -503,6 +553,7 @@ fun MiraScreen(
                     when (settingsPage) {
                         "api" -> "API Key সেটিংস"
                         "models" -> "Gemini মডেল নির্বাচন"
+                        "voice" -> "ভয়েস কন্ট্রোল"
                         else -> "MIRA Settings"
                     }
                 )
@@ -623,6 +674,58 @@ fun MiraScreen(
                             }
                         }
 
+                        "voice" -> {
+                            Text("‘হ্যালো মাইরা’ বলে MIRA-কে ডাকতে ভয়েস সার্ভিস চালু করো।")
+                            Spacer(Modifier.height(12.dp))
+
+                            Text(
+                                if (voiceEnabled) "ভয়েস সার্ভিস চালু আছে"
+                                else "ভয়েস সার্ভিস বন্ধ আছে"
+                            )
+
+                            Spacer(Modifier.height(8.dp))
+
+                            Button(
+                                onClick = {
+                                    onStartVoice { started ->
+                                        voiceEnabled = started
+                                        voiceMessage = if (started)
+                                            "MIRA Voice চালু হয়েছে।"
+                                        else
+                                            "চালু করা যায়নি। মাইক্রোফোন পারমিশন পরীক্ষা করো।"
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !voiceEnabled,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = pink
+                                )
+                            ) {
+                                Text("ভয়েস চালু করুন")
+                            }
+
+                            Spacer(Modifier.height(8.dp))
+
+                            Button(
+                                onClick = {
+                                    onStopVoice()
+                                    voiceEnabled = false
+                                    voiceMessage = "MIRA Voice বন্ধ করা হয়েছে।"
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = voiceEnabled
+                            ) {
+                                Text("ভয়েস বন্ধ করুন")
+                            }
+
+                            Text(voiceMessage, fontSize = 12.sp, color = Color.Gray)
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "চালু থাকলে Android-এর মাইক্রোফোন নোটিফিকেশন দেখা যাবে।",
+                                fontSize = 11.sp
+                            )
+                        }
+
                         else -> {
                             Text("যে সেটিংস পরিবর্তন করতে চাও, সেটি বেছে নাও।")
                             Spacer(Modifier.height(12.dp))
@@ -659,6 +762,21 @@ fun MiraScreen(
                             }
 
                             Spacer(Modifier.height(12.dp))
+                            Button(
+                                onClick = {
+                                    voiceMessage = ""
+                                    settingsPage = "voice"
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = pink
+                                )
+                            ) {
+                                Text("MIRA Voice Control")
+                            }
+
+                            Spacer(Modifier.height(12.dp))
+
                             Text(
                                 "বর্তমান মডেল: ${savedModel()}",
                                 fontSize = 12.sp
