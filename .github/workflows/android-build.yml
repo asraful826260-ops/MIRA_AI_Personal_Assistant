@@ -3,11 +3,13 @@ name: MIRA Android APK Build
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
